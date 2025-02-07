@@ -53,6 +53,9 @@ jobs:
             echo "BASEIMAGE_VERSION=$BASEIMAGE_OVERRIDE" >> $GITHUB_ENV
           fi
 
+          echo "Using Cura version: $CURA_VERSION"
+          echo "BaseImageGUI version: $BASEIMAGE_VERSION"
+
       - name: Log in to the container registry
         uses: docker/login-action@v3
         with:
