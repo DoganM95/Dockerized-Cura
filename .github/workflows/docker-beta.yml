@@ -1,5 +1,5 @@
 name: Publish beta docker image
-# trigger cd 
+# Trigger CD manually or on schedule
 on:
   workflow_dispatch:
   schedule:
@@ -25,34 +25,40 @@ jobs:
           echo "latest_cura_version=$LATEST_CURA_VERSION" >> $GITHUB_OUTPUT
           echo "Latest Cura version: $LATEST_CURA_VERSION"
 
-      - name: Get latest baseimage-gui version
+      - name: Get latest BaseImageGUI version
         id: get_latest_baseimagegui_version
         run: |
           LATEST_BASEIMAGEGUI_VERSION=$(curl -s https://api.github.com/repos/jlesage/docker-baseimage-gui/releases/latest | jq -r '.tag_name' | sed 's/^v//')
           echo "latest_baseimagegui_version=$LATEST_BASEIMAGEGUI_VERSION" >> $GITHUB_OUTPUT
-          echo "Latest baseimagegui version: $LATEST_BASEIMAGEGUI_VERSION"
+          echo "Latest BaseImageGUI version: $LATEST_BASEIMAGEGUI_VERSION"
 
-          - name: Set environment variables for versions
-          run: |
-            CURA_OVERRIDE="${{ vars.BETA_CURA_VERSION_OVERRIDE }}"
-            BASEIMAGE_OVERRIDE="${{ vars.BETA_BASEIMAGEGUI_VERSION_OVERRIDE }}"
-  
-            # Trim spaces and check for placeholder "-"
-            CURA_OVERRIDE=$(echo "$CURA_OVERRIDE" | xargs)
-            BASEIMAGE_OVERRIDE=$(echo "$BASEIMAGE_OVERRIDE" | xargs)
-  
-            if [[ -z "$CURA_OVERRIDE" || "$CURA_OVERRIDE" == "-" ]]; then
-              echo "CURA_VERSION=${{ steps.get_latest_cura_version.outputs.latest_cura_version }}" >> $GITHUB_ENV
-            else
-              echo "CURA_VERSION=$CURA_OVERRIDE" >> $GITHUB_ENV
-            fi
-  
-            if [[ -z "$BASEIMAGE_OVERRIDE" || "$BASEIMAGE_OVERRIDE" == "-" ]]; then
-              echo "BASEIMAGE_VERSION=${{ steps.get_latest_baseimagegui_version.outputs.latest_baseimagegui_version }}" >> $GITHUB_ENV
-            else
-              echo "BASEIMAGE_VERSION=$BASEIMAGE_OVERRIDE" >> $GITHUB_ENV
-            fi
-  
+      - name: Set environment variables for versions
+        run: |
+          CURA_OVERRIDE="${{ vars.BETA_CURA_VERSION_OVERRIDE }}"
+          BASEIMAGE_OVERRIDE="${{ vars.BETA_BASEIMAGEGUI_VERSION_OVERRIDE }}"
+
+          # Trim spaces and check for placeholder "-"
+          CURA_OVERRIDE=$(echo "$CURA_OVERRIDE" | xargs)
+          BASEIMAGE_OVERRIDE=$(echo "$BASEIMAGE_OVERRIDE" | xargs)
+
+          # Ensure CURA_VERSION is properly set
+          if [[ -z "$CURA_OVERRIDE" || "$CURA_OVERRIDE" == "-" ]]; then
+            CURA_VERSION="${{ steps.get_latest_cura_version.outputs.latest_cura_version }}"
+          else
+            CURA_VERSION="$CURA_OVERRIDE"
+          fi
+
+          # Ensure BASEIMAGE_VERSION is properly set
+          if [[ -z "$BASEIMAGE_OVERRIDE" || "$BASEIMAGE_OVERRIDE" == "-" ]]; then
+            BASEIMAGE_VERSION="${{ steps.get_latest_baseimagegui_version.outputs.latest_baseimagegui_version }}"
+          else
+            BASEIMAGE_VERSION="$BASEIMAGE_OVERRIDE"
+          fi
+
+          # Export to GITHUB_ENV
+          echo "CURA_VERSION=$CURA_VERSION" >> $GITHUB_ENV
+          echo "BASEIMAGE_VERSION=$BASEIMAGE_VERSION" >> $GITHUB_ENV
+
       - name: Log selected versions
         run: |
           echo "Using Cura version: $CURA_VERSION"
@@ -60,7 +66,6 @@ jobs:
         env:
           CURA_VERSION: ${{ env.CURA_VERSION }}
           BASEIMAGE_VERSION: ${{ env.BASEIMAGE_VERSION }}
-  
 
       - name: Log in to the container registry
         uses: docker/login-action@v3
