@@ -23,15 +23,28 @@ jobs:
         run: |
           LATEST_CURA_VERSION=$(curl -s https://api.github.com/repos/Ultimaker/Cura/releases | jq -r '[.[] | select(.prerelease == false and .draft == false)][0].tag_name' | sed 's/^v//')
           echo "latest_cura_version=$LATEST_CURA_VERSION" >> $GITHUB_OUTPUT
-          echo "Latest cura version: $LATEST_CURA_VERSION"
+          echo "Latest Cura version: $LATEST_CURA_VERSION"
 
       - name: Get latest baseimage-gui version
         id: get_latest_baseimagegui_version
         run: |
           LATEST_BASEIMAGEGUI_VERSION=$(curl -s https://api.github.com/repos/jlesage/docker-baseimage-gui/releases/latest | jq -r '.tag_name' | sed 's/^v//')
           echo "latest_baseimagegui_version=$LATEST_BASEIMAGEGUI_VERSION" >> $GITHUB_OUTPUT
-          echo "latest baseimagegui version: $LATEST_BASEIMAGEGUI_VERSION"
-          echo "latest stable baseimagegui version: ${{ vars.LATEST_STABLE_BASEIMAGEGUI_VERSION }}"
+          echo "Latest baseimagegui version: $LATEST_BASEIMAGEGUI_VERSION"
+
+      - name: Set environment variables for versions
+        run: |
+          echo "CURA_VERSION=${{ vars.BETA_CURA_VERSION_OVERRIDE }}" >> $GITHUB_ENV
+          echo "BASEIMAGE_VERSION=${{ vars.BETA_BASEIMAGEGUI_VERSION_OVERRIDE }}" >> $GITHUB_ENV
+
+      - name: Fallback to dynamically fetched versions if override is empty
+        run: |
+          if [ -z "$CURA_VERSION" ]; then
+            echo "CURA_VERSION=${{ steps.get_latest_cura_version.outputs.latest_cura_version }}" >> $GITHUB_ENV
+          fi
+          if [ -z "$BASEIMAGE_VERSION" ]; then
+            echo "BASEIMAGE_VERSION=${{ steps.get_latest_baseimagegui_version.outputs.latest_baseimagegui_version }}" >> $GITHUB_ENV
+          fi
 
       - name: Log in to the container registry
         uses: docker/login-action@v3
@@ -46,13 +59,13 @@ jobs:
           context: .
           push: true
           build-args: |
-            CURA_VERSION=${{ vars.BETA_CURA_VERSION_OVERRIDE || steps.get_latest_cura_version.outputs.latest_cura_version }}
-            BASEIMAGE_VERSION=${{ vars.BETA_BASEIMAGEGUI_VERSION_OVERRIDE || steps.get_latest_baseimagegui_version.outputs.latest_baseimagegui_version }}
+            CURA_VERSION=${{ env.CURA_VERSION }}
+            BASEIMAGE_VERSION=${{ env.BASEIMAGE_VERSION }}
           tags: |
-            ghcr.io/doganm95/cura-evolved-beta:${{ vars.BETA_CURA_VERSION_OVERRIDE || steps.get_latest_cura_version.outputs.latest_cura_version }}-${{ github.run_number }}
+            ghcr.io/doganm95/cura-evolved-beta:${{ env.CURA_VERSION }}-${{ github.run_number }}
             ghcr.io/doganm95/cura-evolved-beta:${{ github.sha }}
             ghcr.io/doganm95/cura-evolved-beta:latest
           labels: |
             org.opencontainers.image.source=${{ github.repository_url }}
             org.opencontainers.image.revision=${{ github.sha }}
-            org.opencontainers.image.version=${{ vars.BETA_CURA_VERSION_OVERRIDE || steps.get_latest_cura_version.outputs.latest_cura_version }}
+            org.opencontainers.image.version=${{ env.CURA_VERSION }}
