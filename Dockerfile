@@ -69,43 +69,11 @@ RUN mkdir -p /etc/openbox/ && \
 RUN mkdir -p /app/input /app/output && \
     chmod -R 777 /app
 
+RUN echo '#!/bin/sh\n# Override what is set by the baseimage and do not set the variable.\nexit 100' > /etc/cont-env.d/LIBGL_DRIVERS_PATH
+
 # Copy startup script
 COPY ./startapp.sh /startapp.sh
 
 # Fix script permissions and replace CRLF with LF
 RUN chmod +x /startapp.sh && \
     sed -i 's/\r$//' /startapp.sh
-
-
-### GRAVEYARD
-
-# Generate and install favicon
-# RUN install_app_icon.sh "https://github.com/DoganM95/Cura-Evolved/blob/master/assets/Icon5.png"
-# COPY ./assets/favicon_package_v0.16/* /opt/noVNC/app/images/icons
-
-# Logic to get the latest release on build; Disabled for github action compatibility
-
-# # Fetch API response and save it to a file
-# RUN touch latest_release.json
-# RUN curl -s "https://api.github.com/repos/Ultimaker/Cura/releases/latest" > latest_release.json
-
-# # Extract the download URL and save it to a file
-# RUN touch download_url
-# RUN cat latest_release.json | jq -r '.assets[] | select(.name | test("-linux-X64.AppImage")) | .browser_download_url' | grep '\.AppImage$' > download_url
-
-# # Extract the current cura version into env var
-# RUN touch current_cura_version.txt
-# RUN cat latest_release.json | jq -r '.tag_name' > current_cura_version.txt
-
-# # Copy url file
-# COPY ./download_url /app/download_url
-
-# # Turn CRLF file into LF
-# RUN sed -i 's/\r$//' download_url
-
-# # Download the AppImage
-# RUN wget $(cat download_url)
-
-# # Set permissions
-# RUN chmod -R 755 /app/squashfs-root/ && \
-#     chmod -R 777 /root/.local
