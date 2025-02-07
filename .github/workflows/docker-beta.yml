@@ -32,29 +32,35 @@ jobs:
           echo "latest_baseimagegui_version=$LATEST_BASEIMAGEGUI_VERSION" >> $GITHUB_OUTPUT
           echo "Latest baseimagegui version: $LATEST_BASEIMAGEGUI_VERSION"
 
-      - name: Set environment variables for versions
+          - name: Set environment variables for versions
+          run: |
+            CURA_OVERRIDE="${{ vars.BETA_CURA_VERSION_OVERRIDE }}"
+            BASEIMAGE_OVERRIDE="${{ vars.BETA_BASEIMAGEGUI_VERSION_OVERRIDE }}"
+  
+            # Trim spaces and check for placeholder "-"
+            CURA_OVERRIDE=$(echo "$CURA_OVERRIDE" | xargs)
+            BASEIMAGE_OVERRIDE=$(echo "$BASEIMAGE_OVERRIDE" | xargs)
+  
+            if [[ -z "$CURA_OVERRIDE" || "$CURA_OVERRIDE" == "-" ]]; then
+              echo "CURA_VERSION=${{ steps.get_latest_cura_version.outputs.latest_cura_version }}" >> $GITHUB_ENV
+            else
+              echo "CURA_VERSION=$CURA_OVERRIDE" >> $GITHUB_ENV
+            fi
+  
+            if [[ -z "$BASEIMAGE_OVERRIDE" || "$BASEIMAGE_OVERRIDE" == "-" ]]; then
+              echo "BASEIMAGE_VERSION=${{ steps.get_latest_baseimagegui_version.outputs.latest_baseimagegui_version }}" >> $GITHUB_ENV
+            else
+              echo "BASEIMAGE_VERSION=$BASEIMAGE_OVERRIDE" >> $GITHUB_ENV
+            fi
+  
+      - name: Log selected versions
         run: |
-          CURA_OVERRIDE="${{ vars.BETA_CURA_VERSION_OVERRIDE }}"
-          BASEIMAGE_OVERRIDE="${{ vars.BETA_BASEIMAGEGUI_VERSION_OVERRIDE }}"
-
-          # Trim spaces and check for placeholder "-"
-          CURA_OVERRIDE=$(echo "$CURA_OVERRIDE" | xargs)
-          BASEIMAGE_OVERRIDE=$(echo "$BASEIMAGE_OVERRIDE" | xargs)
-
-          if [[ -z "$CURA_OVERRIDE" || "$CURA_OVERRIDE" == "-" ]]; then
-            echo "CURA_VERSION=${{ steps.get_latest_cura_version.outputs.latest_cura_version }}" >> $GITHUB_ENV
-          else
-            echo "CURA_VERSION=$CURA_OVERRIDE" >> $GITHUB_ENV
-          fi
-
-          if [[ -z "$BASEIMAGE_OVERRIDE" || "$BASEIMAGE_OVERRIDE" == "-" ]]; then
-            echo "BASEIMAGE_VERSION=${{ steps.get_latest_baseimagegui_version.outputs.latest_baseimagegui_version }}" >> $GITHUB_ENV
-          else
-            echo "BASEIMAGE_VERSION=$BASEIMAGE_OVERRIDE" >> $GITHUB_ENV
-          fi
-
           echo "Using Cura version: $CURA_VERSION"
-          echo "BaseImageGUI version: $BASEIMAGE_VERSION"
+          echo "Using BaseImageGUI version: $BASEIMAGE_VERSION"
+        env:
+          CURA_VERSION: ${{ env.CURA_VERSION }}
+          BASEIMAGE_VERSION: ${{ env.BASEIMAGE_VERSION }}
+  
 
       - name: Log in to the container registry
         uses: docker/login-action@v3
