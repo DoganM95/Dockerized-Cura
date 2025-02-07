@@ -5,6 +5,7 @@ on:
   push:
     paths-ignore:
       - 'README.md'
+      - ".github/workflows/docker-beta.yml"
 
 jobs:
   build-and-push-image:
