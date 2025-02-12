@@ -69,7 +69,7 @@ RUN mkdir -p /etc/openbox/ && \
 RUN mkdir -p /app/input /app/output && \
     chmod -R 777 /app
 
-RUN echo '#!/bin/sh\n# Override what is set by the baseimage and do not set the variable.\nexit 100' > /etc/cont-env.d/LIBGL_DRIVERS_PATH
+# RUN echo '#!/bin/sh\n# Override what is set by the baseimage and do not set the variable.\nexit 100' > /etc/cont-env.d/LIBGL_DRIVERS_PATH
 
 # Copy startup script
 COPY ./startapp.sh /startapp.sh
